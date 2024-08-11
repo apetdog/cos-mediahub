@@ -126,10 +126,19 @@ function handleUpload($cosClient, $config)
 function handleList($cosClient, $config)
 {
   try {
+    // 获取分页参数
+    $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+    $pageSize = isset($_GET['pageSize']) ? intval($_GET['pageSize']) : 10;
+
+    // 确保页码和每页数量为正整数
+    $page = max(1, $page);
+    $pageSize = max(1, min(100, $pageSize)); // 限制每页最大数量为100
+
     // 列出指定存储桶中的对象
     $result = $cosClient->listObjects([
       'Bucket' => $config['bucket'],
       'Prefix' => $config['uploadDir'],
+      'MaxKeys' => 1000, // 设置一个较大的值以获取所有文件
     ]);
 
     $files = [];
@@ -153,10 +162,24 @@ function handleList($cosClient, $config)
       }
     }
 
+    // 计算总页数
+    $totalFiles = count($files);
+    $totalPages = ceil($totalFiles / $pageSize);
+
+    // 获取当前页的文件
+    $offset = ($page - 1) * $pageSize;
+    $currentPageFiles = array_slice($files, $offset, $pageSize);
+
     // 返回成功的 JSON 响应
     echo json_encode([
       'success' => true,
-      'files' => $files,
+      'files' => $currentPageFiles,
+      'pagination' => [
+        'currentPage' => $page,
+        'pageSize' => $pageSize,
+        'totalPages' => $totalPages,
+        'totalFiles' => $totalFiles,
+      ],
     ]);
   } catch (Exception $e) {
     // 返回错误的 JSON 响应

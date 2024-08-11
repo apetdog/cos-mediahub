@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,14 +19,15 @@
   >
     <div id="app">
       <section
-        class="flex justify-center items-center px-4 py-16 text-5xl font-light text-center"
+        class="flex flex-col gap-2 justify-center items-center px-4 py-16 text-5xl font-light text-center"
       >
-        <span>
-          一站式<span class="text-rose-500">图片</span>上传腾讯云COS服务
-        </span>
+        <div>一站式<span class="text-rose-500">图片上传</span>服务</div>
+        <div class="text-sm text-zinc-500">
+          一键上传图片到腾讯云COS，仅限内部使用，请勿上传无关的内容
+        </div>
       </section>
       <main class="container mx-auto p-4">
-        <section class="mb-4">
+        <section class="mb-4 flex flex-wrap items-center gap-2">
           <input
             type="file"
             @change="handleFileChange"
@@ -35,18 +36,26 @@
           />
           <input
             v-model="customFileName"
-            placeholder="Custom file name (optional)"
+            placeholder="自定义文件名（可选）"
             class="border p-2 mr-2"
           />
+          <label class="flex items-center">
+            <input type="checkbox" v-model="removeTimestamp" class="mr-2" />
+            去掉时间戳
+          </label>
           <button
             @click="uploadFile"
-            class="bg-blue-500 text-white px-4 py-2 rounded"
+            :disabled="isLoading"
+            class="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-300"
           >
-            Upload
+            {{ isLoading ? '上传中...' : '上传' }}
           </button>
         </section>
 
-        <section class="grid grid-cols-5 gap-4" v-if="files.length > 0">
+        <section
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+          v-if="files.length > 0"
+        >
           <div
             v-for="file in files"
             :key="file.key"
@@ -73,17 +82,49 @@
             </div>
           </div>
         </section>
+
+        <div v-if="isLoading" class="flex justify-center items-center mt-4">
+          <div
+            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
+          ></div>
+        </div>
+
+        <section
+          class="mt-4 flex justify-center items-center"
+          v-if="totalPages > 1"
+        >
+          <button
+            @click="changePage(currentPage - 1)"
+            :disabled="currentPage === 1 || isLoading"
+            class="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+          >
+            上一页
+          </button>
+          <span class="mx-4">{{ currentPage }} / {{ totalPages }}</span>
+          <button
+            @click="changePage(currentPage + 1)"
+            :disabled="currentPage === totalPages || isLoading"
+            class="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+          >
+            下一页
+          </button>
+        </section>
       </main>
     </div>
 
     <script type="module">
-      import { createApp, ref, onMounted } from "vue";
+      import { createApp, ref, onMounted, computed } from "vue";
 
       const app = {
         setup() {
           const files = ref([]);
           const customFileName = ref("");
           const selectedFileForUpload = ref(null);
+          const currentPage = ref(1);
+          const totalPages = ref(1);
+          const pageSize = ref(20);
+          const isLoading = ref(false);
+          const removeTimestamp = ref(false);
 
           const API_URL = "./api.php";
 
@@ -92,7 +133,9 @@
             const k = 1024;
             const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
+            return (
+              parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+            );
           };
 
           const handleFileChange = (event) => {
@@ -101,21 +144,28 @@
 
           const uploadFile = async () => {
             if (!selectedFileForUpload.value) {
-              alert("Please select a file");
+              alert("请选择一个文件");
               return;
             }
 
+            isLoading.value = true;
             const formData = new FormData();
-            const timestamp = Date.now();
-            const fileName = customFileName.value
-              ? `${customFileName.value}_${timestamp}${getFileExtension(
-                  selectedFileForUpload.value.name
-                )}`
-              : `${
-                  selectedFileForUpload.value.name.split(".")[0]
-                }_${timestamp}${getFileExtension(
-                  selectedFileForUpload.value.name
-                )}`;
+            let fileName = selectedFileForUpload.value.name;
+
+            if (customFileName.value) {
+              const extension = getFileExtension(fileName);
+              fileName = `${customFileName.value}${extension}`;
+            }
+
+            if (!removeTimestamp.value) {
+              const timestamp = Date.now();
+              const nameWithoutExtension = fileName
+                .split(".")
+                .slice(0, -1)
+                .join(".");
+              const extension = getFileExtension(fileName);
+              fileName = `${nameWithoutExtension}_${timestamp}${extension}`;
+            }
 
             formData.append("image", selectedFileForUpload.value, fileName);
 
@@ -127,14 +177,16 @@
 
               if (response.ok) {
                 const result = await response.json();
-                alert("File uploaded successfully");
+                alert("文件上传成功");
                 fetchFiles();
               } else {
-                throw new Error("Upload failed");
+                throw new Error("上传失败");
               }
             } catch (error) {
-              console.error("Error:", error);
-              alert("Upload failed: " + error.message);
+              console.error("错误：", error);
+              alert("上传失败：" + error.message);
+            } finally {
+              isLoading.value = false;
             }
           };
 
@@ -143,25 +195,44 @@
           };
 
           const fetchFiles = async () => {
+            isLoading.value = true;
             try {
-              const response = await fetch(`${API_URL}?route=list`);
+              const response = await fetch(
+                `${API_URL}?route=list&page=${currentPage.value}&pageSize=${pageSize.value}`
+              );
               if (response.ok) {
                 const result = await response.json();
                 files.value = result.files.map((file) => ({
                   ...file,
                   showImage: false,
                 }));
+                currentPage.value = result.pagination.currentPage;
+                totalPages.value = result.pagination.totalPages;
               } else {
-                throw new Error("Failed to fetch files");
+                throw new Error("获取文件列表失败");
               }
             } catch (error) {
-              console.error("Error:", error);
-              alert("Failed to fetch files: " + error.message);
+              console.error("错误：", error);
+              alert("获取文件列表失败：" + error.message);
+            } finally {
+              isLoading.value = false;
+            }
+          };
+
+          const changePage = (newPage) => {
+            if (
+              newPage >= 1 &&
+              newPage <= totalPages.value &&
+              !isLoading.value
+            ) {
+              currentPage.value = newPage;
+              fetchFiles();
             }
           };
 
           const toggleFile = async (file) => {
             if (!file.url) {
+              isLoading.value = true;
               try {
                 const response = await fetch(
                   `${API_URL}?route=getFile&key=${encodeURIComponent(file.key)}`
@@ -170,12 +241,14 @@
                   const result = await response.json();
                   file.url = result.url;
                 } else {
-                  throw new Error("Failed to get file details");
+                  throw new Error("获取文件详情失败");
                 }
               } catch (error) {
-                console.error("Error:", error);
-                alert("Failed to get file details: " + error.message);
+                console.error("错误：", error);
+                alert("获取文件详情失败：" + error.message);
                 return;
+              } finally {
+                isLoading.value = false;
               }
             }
             file.showImage = !file.showImage;
@@ -192,6 +265,11 @@
             uploadFile,
             toggleFile,
             formatFileSize,
+            currentPage,
+            totalPages,
+            changePage,
+            isLoading,
+            removeTimestamp,
           };
         },
       };
