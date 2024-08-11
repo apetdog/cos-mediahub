@@ -123,6 +123,7 @@ function handleUpload($cosClient, $config)
     ]);
   }
 }
+
 function handleList($cosClient, $config)
 {
   try {
@@ -162,6 +163,11 @@ function handleList($cosClient, $config)
       }
     }
 
+    // 按最后修改时间降序排序
+    usort($files, function ($a, $b) {
+      return strtotime($b['lastModified']) - strtotime($a['lastModified']);
+    });
+
     // 计算总页数
     $totalFiles = count($files);
     $totalPages = ceil($totalFiles / $pageSize);
@@ -190,6 +196,7 @@ function handleList($cosClient, $config)
     ]);
   }
 }
+
 function handleGetFile($cosClient, $config)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['key'])) {
