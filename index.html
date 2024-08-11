@@ -64,7 +64,7 @@
             <div
               class="cursor-pointer bg-zinc-200 rounded-3xl flex items-center justify-center"
               @click="toggleFile(file)"
-              style="aspect-ratio: 3/4"
+              style="aspect-ratio: 1/1"
             >
               <img
                 v-if="file.showImage"
@@ -77,7 +77,9 @@
               </span>
             </div>
             <div class="flex items-center justify-between gap-2 px-3 text-sm">
-              <div class="line-clamp-1">{{ file.key.split('/').pop() }}</div>
+              <div class="line-clamp-1 cursor-pointer" @click="copyToClipboard(file.url)">
+                {{ file.key.split('/').pop() }}
+              </div>
               <div class="flex-none">{{formatFileSize(file.size)}}</div>
             </div>
           </div>
@@ -254,6 +256,18 @@
             file.showImage = !file.showImage;
           };
 
+          const copyToClipboard = (url) => {
+            navigator.clipboard
+              .writeText(url)
+              .then(() => {
+                alert("URL 已复制到剪贴板！");
+              })
+              .catch((err) => {
+                console.error("复制失败：", err);
+                alert("复制失败，请手动复制。");
+              });
+          };
+
           onMounted(() => {
             fetchFiles();
           });
@@ -270,6 +284,7 @@
             changePage,
             isLoading,
             removeTimestamp,
+            copyToClipboard,
           };
         },
       };
