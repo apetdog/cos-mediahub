@@ -27,16 +27,16 @@
       </div>
     </section>
     <div v-if="isLoading">
-      <div class="flex justify-center items-center h-[60vh]">
+      <div class="flex justify-center items-center h-[90vh]">
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"
         ></div>
       </div>
     </div>
 
-    <div v-else :class="isLoading ? 'hidden' : ''">
+    <div v-else :class="'', {'hidden': isLoading  }">
       <main class="container mx-auto p-4">
-        <section class="mb-4 flex flex-wrap items-center gap-2">
+        <section class="mb-8 flex flex-wrap items-center gap-2">
           <input
             type="file"
             @change="handleFileChange"
@@ -71,7 +71,7 @@
             class="flex flex-col gap-2"
           >
             <div
-              class="cursor-pointer bg-zinc-200 rounded-3xl flex items-center justify-center"
+              class="cursor-pointer bg-zinc-200 rounded-3xl flex items-center justify-center overflow-hidden hover:bg-zinc-300"
               @click="toggleFile(file)"
               style="aspect-ratio: 1/1"
             >
@@ -79,20 +79,21 @@
                 v-if="file.showImage"
                 :src="file.url"
                 alt="File preview"
-                class="max-w-full max-h-full object-contain"
+                class="w-full h-full object-contain"
               />
-              <span v-else class="text-2xl font-light text-zinc-400">
+              <span v-else class="text-2xl font-light text-zinc-500">
                 点击查看
               </span>
             </div>
-            <div class="flex items-center justify-between gap-2 px-3 text-sm">
+            <div class="flex items-center justify-between gap-2 px-3 text-sm font-light">
               <div
                 class="line-clamp-1 cursor-pointer"
                 @click="copyToClipboard(file.url)"
+                :title="file.key.split('/').pop()"
               >
                 {{ file.key.split('/').pop() }}
               </div>
-              <div class="flex-none">{{formatFileSize(file.size)}}</div>
+              <div class="flex-none text-zinc-400">{{formatFileSize(file.size)}}</div>
             </div>
           </div>
         </section>
@@ -126,7 +127,7 @@
       </main>
       <section
         v-if="showTips"
-        class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300"
+        class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300"
         :class="{ 'opacity-0': tipsHiding }"
       >
         {{ tipsMessage }}
@@ -330,7 +331,9 @@
         },
       };
 
-      createApp(app).mount("#app");
+      document.addEventListener("DOMContentLoaded", () => {
+        createApp(app).mount("#app");
+      });
     </script>
   </body>
 </html>
