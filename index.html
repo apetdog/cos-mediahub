@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="/public/logo.png" type="image/x-icon" />
-    <title>MediaHub|一站式图片上传</title>
+    <title>ImgHub - 一站式图片上传</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="importmap">
       {
@@ -71,7 +71,7 @@
             class="flex flex-col gap-2"
           >
             <div
-              class="cursor-pointer bg-zinc-200 rounded-3xl flex items-center justify-center overflow-hidden hover:bg-zinc-300"
+              class="cursor-pointer bg-zinc-200 rounded-3xl flex items-center justify-center overflow-hidden transition-all hover:scale-[101%] active:bg-zinc-300"
               @click="toggleFile(file)"
               style="aspect-ratio: 1/1"
             >
@@ -85,7 +85,9 @@
                 点击查看
               </span>
             </div>
-            <div class="flex items-center justify-between gap-2 px-3 text-sm font-light">
+            <div
+              class="flex items-center justify-between gap-2 px-3 text-sm font-light"
+            >
               <div
                 class="line-clamp-1 cursor-pointer"
                 @click="copyToClipboard(file.url)"
@@ -93,7 +95,9 @@
               >
                 {{ file.key.split('/').pop() }}
               </div>
-              <div class="flex-none text-zinc-400">{{formatFileSize(file.size)}}</div>
+              <div class="flex-none text-zinc-400">
+                {{formatFileSize(file.size)}}
+              </div>
             </div>
           </div>
         </section>
@@ -174,13 +178,12 @@
             const k = 1024;
             const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return (
-              parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-            );
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
           };
 
           const handleFileChange = (event) => {
             selectedFileForUpload.value = event.target.files[0];
+            customFileName.value = selectedFileForUpload.value.name;
           };
 
           const uploadFile = async () => {
@@ -299,11 +302,11 @@
             navigator.clipboard
               .writeText(url)
               .then(() => {
-                showTipsMessage("URL 已复制到剪贴板！");
+                showTipsMessage("URL 已复制到剪贴板");
               })
               .catch((err) => {
                 console.error("复制失败：", err);
-                showTipsMessage("复制失败，请手动复制。");
+                showTipsMessage("复制失败，请手动复制");
               });
           };
 
