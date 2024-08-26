@@ -93,6 +93,8 @@ function handleUpload($cosClient, $config)
 
         // 获取文件的 URL
         $url = $cosClient->getObjectUrl($config['bucket'], $key);
+        // 移除 URL 中的签名参数
+        $url = strtok($url, '?');
 
         // 返回成功的 JSON 响应
         echo json_encode([
