@@ -39,7 +39,7 @@ switch ($route) {
     handleGetFile($cosClient, $config);
     break;
   default:
-    echo json_encode(['error' => 'Invalid route']);
+    echo json_encode(['error' => '无效的路由']);
     break;
 }
 
@@ -48,8 +48,8 @@ function handleUpload($cosClient, $config)
 {
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 检查是否有文件上传且没有错误
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-      $file = $_FILES['image'];
+    $file = $_FILES['image'] ?? $_FILES['file'] ?? null;
+    if ($file && $file['error'] === UPLOAD_ERR_OK) {
       $fileName = $file['name'];
       $fileTmpPath = $file['tmp_name'];
       $fileSize = $file['size'];
@@ -61,14 +61,13 @@ function handleUpload($cosClient, $config)
       // 生成文件在 COS 中的路径
       $key = $directory . $fileName;
 
-
       // 检查文件大小（例如，限制为 10MB）
       $maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
       if ($fileSize > $maxFileSize) {
         http_response_code(413);
         echo json_encode([
           'success' => false,
-          'message' => 'File size exceeds the limit of 10MB',
+          'message' => '文件大小超过 10MB 的限制',
         ]);
         return;
       }
@@ -98,7 +97,7 @@ function handleUpload($cosClient, $config)
         // 返回成功的 JSON 响应
         echo json_encode([
           'success' => true,
-          'message' => 'File uploaded successfully',
+          'message' => '文件上传成功',
           'url' => $url,
           'fileName' => $fileName,
         ]);
@@ -107,7 +106,7 @@ function handleUpload($cosClient, $config)
         http_response_code(500);
         echo json_encode([
           'success' => false,
-          'message' => 'Upload failed: ' . $e->getMessage(),
+          'message' => '上传失败: ' . $e->getMessage(),
         ]);
       }
     } else {
@@ -115,7 +114,7 @@ function handleUpload($cosClient, $config)
       http_response_code(400);
       echo json_encode([
         'success' => false,
-        'message' => 'No file uploaded or upload error occurred',
+        'message' => '没有文件上传或上传错误',
       ]);
     }
   } else {
@@ -123,7 +122,7 @@ function handleUpload($cosClient, $config)
     http_response_code(405);
     echo json_encode([
       'success' => false,
-      'message' => 'Method not allowed',
+      'message' => '方法不允许',
     ]);
   }
 }
@@ -196,7 +195,7 @@ function handleList($cosClient, $config)
     http_response_code(500);
     echo json_encode([
       'success' => false,
-      'message' => 'Failed to list files: ' . $e->getMessage(),
+      'message' => '文件列表获取失败: ' . $e->getMessage(),
     ]);
   }
 }
@@ -220,7 +219,7 @@ function handleGetFile($cosClient, $config)
       http_response_code(500);
       echo json_encode([
         'success' => false,
-        'message' => 'Failed to get file: ' . $e->getMessage(),
+        'message' => '获取文件失败: ' . $e->getMessage(),
       ]);
     }
   } else {
@@ -228,7 +227,7 @@ function handleGetFile($cosClient, $config)
     http_response_code(400);
     echo json_encode([
       'success' => false,
-      'message' => 'Invalid request method or missing key parameter',
+      'message' => '请求方法无效或缺少 key 参数',
     ]);
   }
 }
