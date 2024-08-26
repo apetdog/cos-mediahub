@@ -54,8 +54,12 @@ function handleUpload($cosClient, $config)
       $fileTmpPath = $file['tmp_name'];
       $fileSize = $file['size'];
 
+      // 获取自定义目录
+      $directory = $_GET['directory'] ?? $config['uploadDir'];
+      $directory = rtrim($directory, '/') . '/';
+
       // 生成文件在 COS 中的路径
-      $key = $config['uploadDir'] . '/' . $fileName;
+      $key = $directory . $fileName;
 
 
       // 检查文件大小（例如，限制为 10MB）
